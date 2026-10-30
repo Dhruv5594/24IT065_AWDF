@@ -22,6 +22,8 @@ const TasksPage = () => {
   });
   const [formError, setFormError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiMeta, setAiMeta] = useState(null);
 
   const fetchTasks = async (statusFilter = filterStatus) => {
     setLoading(true);
@@ -59,6 +61,7 @@ const TasksPage = () => {
     setEditingTask(null);
     setTaskForm({ title: '', description: '', status: 'pending', priority: 'medium' });
     setFormError(null);
+    setAiMeta(null);
     setShowModal(true);
   };
 
@@ -71,7 +74,41 @@ const TasksPage = () => {
       priority: task.priority,
     });
     setFormError(null);
+    setAiMeta(null);
     setShowModal(true);
+  };
+
+  const handleGenerateAiSuggestion = async () => {
+    if (!taskForm.title.trim()) {
+      setFormError('Please enter a task title first so the AI can analyze it.');
+      return;
+    }
+    setAiLoading(true);
+    setFormError(null);
+    try {
+      const res = await api.post('/tasks/ai-suggest', { title: taskForm.title });
+      if (res.data.success && res.data.data) {
+        const ai = res.data.data;
+        const subtasksText = ai.recommendedChecklist && ai.recommendedChecklist.length > 0
+          ? `\n\nAI Checklist:\n- ${ai.recommendedChecklist.join('\n- ')}`
+          : '';
+        const deadlineText = ai.suggestedDeadline ? `\n(Estimated: ${ai.suggestedDeadline})` : '';
+
+        setTaskForm((prev) => ({
+          ...prev,
+          description: `${ai.suggestedDescription || ''}${deadlineText}${subtasksText}`,
+          priority: ai.suggestedPriority || prev.priority,
+        }));
+        setAiMeta(ai);
+        showNotification('success', `✨ AI Assistant generated suggestions using ${ai.source}!`);
+      }
+    } catch (err) {
+      console.warn('[TasksPage] AI Suggestion error:', err);
+      // Graceful degradation: never crash UI
+      setFormError('AI service is currently busy. You can still fill in the fields manually.');
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const handleFormSubmit = async (e) => {
@@ -142,10 +179,10 @@ const TasksPage = () => {
               fontWeight: 700,
               marginBottom: '8px'
             }}>
-              PRACTICALS 4, 5, 6, 7, 9 & 10
+              PRACTICALS 4–7, 9, 10, 12 & 13
             </div>
             <h2 className="section-title" style={{ textAlign: 'left', marginBottom: '6px' }}>
-              Task Management Dashboard
+              Task Management & AI Dashboard
             </h2>
             <p style={{ color: 'var(--text-muted)' }}>
               Authenticated user: <strong>{user?.name}</strong> ({user?.email}) • Isolated MongoDB storage
@@ -306,15 +343,46 @@ const TasksPage = () => {
 
               <form onSubmit={handleFormSubmit}>
                 <div className="form-group">
-                  <label className="form-label">Task Title *</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label className="form-label" style={{ marginBottom: 0 }}>Task Title *</label>
+                    <button
+                      type="button"
+                      onClick={handleGenerateAiSuggestion}
+                      disabled={aiLoading || !taskForm.title.trim()}
+                      className="btn btn-sm btn-outline"
+                      style={{
+                        padding: '4px 10px',
+                        fontSize: '0.8rem',
+                        background: '#eff6ff',
+                        color: '#1d4ed8',
+                        borderColor: '#bfdbfe',
+                        cursor: aiLoading || !taskForm.title.trim() ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      {aiLoading ? '✨ Analyzing with AI...' : '✨ Auto-Fill with AI (Practical 13)'}
+                    </button>
+                  </div>
                   <input
                     type="text"
                     className="form-input"
-                    placeholder="e.g. Build Dockerfile for ITUE301 backend"
+                    placeholder="e.g. Deploy multi-container Docker Compose application"
                     value={taskForm.title}
                     onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
                     required
                   />
+                  {aiMeta && (
+                    <div style={{
+                      marginTop: '8px',
+                      padding: '8px 12px',
+                      background: '#f0fdf4',
+                      border: '1px solid #bbf7d0',
+                      borderRadius: '6px',
+                      fontSize: '0.8rem',
+                      color: '#166534'
+                    }}>
+                      ⚡ <strong>AI Suggestion Applied:</strong> {aiMeta.source} • Category: {aiMeta.suggestedCategory} • Est: {aiMeta.suggestedDeadline}
+                    </div>
+                  )}
                 </div>
 
                 <div className="form-group">

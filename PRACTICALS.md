@@ -664,4 +664,148 @@ Three healthy containers running in harmony, fully accessible via `http://localh
    *A:* `docker compose down` stops and removes containers and networks, leaving named volumes intact. `docker compose down -v` also deletes all named volumes, which would permanently erase all database data.
 
 ---
-*End of ITUE301 Practicals 1 to 11 Manual — Prepared for CHARUSAT Practical Examination*
+
+# PRACTICAL 12: CI/CD PIPELINE WITH GITHUB ACTIONS
+
+### Aim
+To automate testing and deployment of the application using a continuous integration and continuous delivery (CI/CD) pipeline.
+
+### Requirements & Problem Statement
+- Set up a GitHub Actions workflow for the Task Management application that automatically triggers on every push and pull request to the `main` or `master` branch.
+- The pipeline must:
+  1. Check out the repository source code.
+  2. Set up the Node.js 20 runtime environment.
+  3. Install backend and frontend dependencies with package caching.
+  4. Execute automated backend test suites (Cache benchmark, EventEmitter test, model schema validation).
+  5. Execute production frontend build and bundle compilation (`npm run build`).
+  6. Report unified pass/fail pipeline status.
+- Demonstrate a **failed pipeline** caused by a broken test (simulated failure), and a **successful pipeline** after the fix.
+
+### Technologies Used
+- GitHub Actions (Workflows, Jobs, Steps, Runners)
+- YAML Workflow Configuration (`.github/workflows/ci.yml`)
+- Node.js Automated Test Runners
+- Vite Production Bundler
+
+### Implementation Details
+- `.github/workflows/ci.yml`: Defines three parallel/dependent jobs:
+  - `backend-testing`: Runs on `ubuntu-latest`, installs dependencies with npm caching, executes `node tests/cache-benchmark.js`, `node tests/event-emitter.test.js`, and `node tests/ai-integration.test.js`.
+  - `frontend-build`: Runs on `ubuntu-latest`, verifies that all lazy-loaded routes and assets compile cleanly with Vite into `dist/`.
+  - `pipeline-summary`: Evaluates job outcomes and reports definitive GREEN (PASS) or RED (FAIL) exit status.
+- `backend/tests/ci-test-demo.js`: Standalone test suite with schema assertion testing and simulated failure flag (`--fail` or `SIMULATE_FAILURE=true`) to demonstrate pipeline breakage and subsequent repair.
+
+### Source Files
+- [`.github/workflows/ci.yml`](file:///d:/AWDF_SEM5/.github/workflows/ci.yml)
+- [`backend/tests/ci-test-demo.js`](file:///d:/AWDF_SEM5/backend/tests/ci-test-demo.js)
+- [`backend/package.json`](file:///d:/AWDF_SEM5/backend/package.json) (`"test:ci": "node tests/ci-test-demo.js"`)
+
+### Execution Commands
+```bash
+# 1. Run passing test suite
+cd backend
+npm run test:ci
+
+# 2. Demonstrate simulated broken test failure (Pipeline RED)
+node tests/ci-test-demo.js --fail
+
+# 3. Re-run after fix (Pipeline GREEN)
+node tests/ci-test-demo.js
+```
+
+### Testing Procedure
+1. Run `node backend/tests/ci-test-demo.js --fail`. Observe the assertion error:
+   `❌ [FAIL] Assertion failed: Task title cannot be empty.`
+   The script exits with code 1, demonstrating a failing build in GitHub Actions.
+2. Run `node backend/tests/ci-test-demo.js`. Observe all 3/3 checks passing with exit code 0:
+   `✅ CI PIPELINE STATUS: GREEN (SUCCESSFUL)`.
+3. Commit and push to GitHub repository to observe automated workflow execution under the **Actions** tab.
+
+### Expected Output
+Automated workflow runs on every push, reporting step-by-step logs, preventing broken code from merging to production, and providing instant status feedback.
+
+### Viva Questions & Answers
+1. **Q: What is Continuous Integration (CI) and Continuous Delivery (CD)?**  
+   *A:* Continuous Integration (CI) is the practice of automatically merging developer code into a shared repository multiple times a day, triggering automated builds and tests to detect regressions early. Continuous Delivery (CD) automatically prepares and packages validated code for production deployment.
+2. **Q: What are the main building blocks of a GitHub Actions workflow?**  
+   *A:* Workflows (YAML automation file in `.github/workflows`), Events (triggers like `push` or `pull_request`), Jobs (independent units of work running on runner machines), Steps (individual tasks running shell commands or action plugins), and Runners (virtual machines or containers hosted by GitHub or self-hosted).
+3. **Q: Why should dependency caching be used in CI pipelines?**  
+   *A:* Downloading and installing `node_modules` on every run consumes significant bandwidth and pipeline minutes. Actions caching (`actions/setup-node` with `cache: 'npm'`) caches package tarballs between runs, reducing pipeline execution time from minutes to seconds.
+4. **Q: What happens when a test step fails in a CI workflow?**  
+   *A:* By default, when a command returns a non-zero exit code (e.g. `exit 1`), GitHub Actions immediately terminates subsequent steps in that job, marks the job and pipeline run as **Failed (Red Cross)**, blocks pull request merging (if branch protection is enabled), and notifies the committer.
+5. **Q: How do you prevent sensitive API keys or database passwords from leaking into CI/CD workflows?**  
+   *A:* Never commit `.env` or plaintext credentials to Git repositories. Store secrets securely in **GitHub Repository Secrets** (`Settings -> Secrets and variables -> Actions`) and inject them dynamically as environment variables (`${{ secrets.API_KEY }}`) at runner runtime.
+
+---
+
+# PRACTICAL 13: AI API INTEGRATION INTO A WEB APPLICATION
+
+### Aim
+To integrate an external AI service into the existing web application and understand responsible AI usage and graceful degradation principles.
+
+### Requirements & Problem Statement
+- Add a meaningful AI-powered assistant feature to the Task Management application using an external AI API (such as Google Gemini API or OpenAI API).
+- The AI assistant must perform practical productivity enhancements:
+  - Analyze task titles (e.g. "Deploy multi-container Docker Compose application", "Prepare ITUE301 viva presentation").
+  - Auto-generate structured descriptions and actionable subtask checklists.
+  - Recommend priority levels (`low`, `medium`, `high`) based on urgency and technical scope.
+  - Suggest realistic deadlines and estimated durations.
+- Implement **graceful degradation and responsible AI usage**:
+  - Handle API errors, rate limits, timeouts, and missing API keys gracefully.
+  - Ensure the core application remains fully functional even when external AI services are unreachable.
+  - Provide heuristic fallback processing so user productivity is never disrupted.
+
+### Technologies Used
+- External LLM APIs: Google Gemini API / OpenAI Chat Completions API
+- Node.js Fetch API with structured JSON response handling
+- Semantic NLP Heuristic Fallback Engine
+- React 18 UI Modal Integration with loading indicators
+
+### Implementation Details
+- `backend/services/aiService.js`:
+  - Checks for `GEMINI_API_KEY` or `OPENAI_API_KEY`.
+  - If available, queries the model with prompt engineering requesting strictly formatted JSON.
+  - If API call fails, quotas expire, or keys are omitted, seamlessly routes the request to an intelligent heuristic semantic analysis engine (`generateHeuristicSuggestion`) that evaluates domain keywords (Docker, API, security, viva, bug, testing) to generate realistic descriptions, checklists, and priorities.
+- `backend/controllers/taskController.js`: Exposes `POST /api/tasks/ai-suggest` endpoint protected by JWT middleware.
+- `frontend/src/pages/TasksPage.jsx`: Added **"✨ Auto-Fill with AI (Practical 13)"** button inside the Task creation/edit modal. When clicked, it analyzes the entered title and auto-populates the description, deadline estimate, subtask checklist, and priority recommendation with an applied AI badge.
+
+### Source Files
+- [`backend/services/aiService.js`](file:///d:/AWDF_SEM5/backend/services/aiService.js)
+- [`backend/controllers/taskController.js`](file:///d:/AWDF_SEM5/backend/controllers/taskController.js)
+- [`backend/routes/taskRoutes.js`](file:///d:/AWDF_SEM5/backend/routes/taskRoutes.js)
+- [`frontend/src/pages/TasksPage.jsx`](file:///d:/AWDF_SEM5/frontend/src/pages/TasksPage.jsx)
+- [`backend/tests/ai-integration.test.js`](file:///d:/AWDF_SEM5/backend/tests/ai-integration.test.js)
+
+### Execution Commands
+```bash
+# Run automated AI integration test suite
+cd backend
+npm run test:ai
+```
+
+### Testing Procedure
+1. Run `npm run test:ai` in the backend terminal. Verify all 4 test groups pass:
+   - DevOps task keyword analysis (generates checklist and high priority).
+   - Authentication keyword analysis (generates security guidance).
+   - Error handling for invalid/empty input.
+   - Responsible AI transparency notice verification.
+2. Open the browser at `http://localhost:5173/tasks` and click "Create New Task".
+3. Type a title such as `Deploy multi-container Docker Compose application` and click `✨ Auto-Fill with AI (Practical 13)`.
+4. Verify that the description and priority automatically populate with technical breakdown and estimated duration.
+
+### Expected Output
+Responsive AI assistant that enriches task data dynamically, handles external outages seamlessly via local fallback heuristics, and maintains responsible AI disclosures without application breakage.
+
+### Viva Questions & Answers
+1. **Q: What is Graceful Degradation in the context of integrating external AI services?**  
+   *A:* Graceful degradation is an architectural design principle ensuring that if an external dependency (like an external LLM API) fails due to network outage, rate limiting, or server downtime, the core application continues to operate safely without crashing, providing an intelligent fallback or manual entry path.
+2. **Q: What is Responsible AI and why is it important in software development?**  
+   *A:* Responsible AI encompasses designing and deploying AI systems that are transparent, secure, unbiased, accountable, and respect user privacy. It includes disclaiming generated content, avoiding unvetted automated decisions on critical data, protecting private credentials, and implementing content filtering.
+3. **Q: Why should AI API calls be routed through the backend rather than called directly from React frontend code?**  
+   *A:* Direct frontend calls expose private API keys (like `GEMINI_API_KEY` or `OPENAI_API_KEY`) to anyone inspecting browser network traffic. Routing through backend endpoints keeps credentials secret, enforces user rate limits, sanitizes prompts, and implements caching.
+4. **Q: What is Prompt Engineering?**  
+   *A:* Prompt engineering is the practice of structuring, refining, and designing the input text given to a generative AI model to guide it toward producing deterministic, accurate, and format-specific outputs (such as requesting strictly valid JSON schema).
+5. **Q: How do you handle LLM latency so it does not block the user interface?**  
+   *A:* Use asynchronous HTTP requests with clear loading indicators (`aiLoading` spinner), implement timeout limits (e.g. 5–10 seconds), provide cancel buttons, and fall back to cached or heuristic responses if the external API takes too long to respond.
+
+---
+*End of ITUE301 Practicals 1 to 13 Manual — Prepared for CHARUSAT Practical Examination*

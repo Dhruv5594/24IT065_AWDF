@@ -11,6 +11,8 @@ const HomePage = () => {
     { num: 'P6-P7', title: 'Full-Stack Integration & Auth', desc: 'Secure JWT authentication pipeline, bcrypt password hashing, protected routes, and per-user data isolation.', link: '/tasks' },
     { num: 'P8-P10', title: 'Performance, Caching & Events', desc: 'React.lazy route splitting, node-cache in-memory query optimization, and native EventEmitter async processing.', link: '/tasks' },
     { num: 'P11', title: 'Docker Containerization', desc: 'Multi-stage Dockerfiles, Nginx SPA routing & API reverse proxy, persistent MongoDB volume orchestration.', link: '/tasks' },
+    { num: 'P12', title: 'CI/CD with GitHub Actions', desc: 'Automated test suite, dependency caching, build verification, and pipeline status reporting on every repository push.', link: '/tasks' },
+    { num: 'P13', title: 'AI API Integration', desc: 'Intelligent AI task assistant with auto-description generation, priority recommendation, and zero-breakage responsible fallback.', link: '/tasks' },
   ];
 
   return (

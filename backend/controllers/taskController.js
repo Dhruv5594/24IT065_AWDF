@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import Task from '../models/Task.js';
 import cache, { getTasksCacheKey, invalidateUserTasksCache } from '../utils/cache.js';
 import taskEvents, { TASK_CREATED_EVENT } from '../utils/eventEmitter.js';
+import { getAiTaskSuggestion } from '../services/aiService.js';
 
 /**
  * @desc    Get all tasks for the logged in user
@@ -252,6 +253,32 @@ export const deleteTask = async (req, res, next) => {
       success: true,
       message: `Task "${task.title}" deleted successfully`,
       deletedId: id,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get AI recommendations for task description, priority, and deadline
+ * @route   POST /api/tasks/ai-suggest
+ * @access  Private (Practical 13)
+ */
+export const suggestAiTask = async (req, res, next) => {
+  try {
+    const { title } = req.body;
+    if (!title || title.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a task title to generate AI suggestions',
+      });
+    }
+
+    const suggestion = await getAiTaskSuggestion(title.trim());
+    return res.status(200).json({
+      success: true,
+      message: 'AI suggestion generated successfully',
+      data: suggestion,
     });
   } catch (error) {
     next(error);

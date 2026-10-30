@@ -23,6 +23,8 @@
 | **Practical 9** | In-Memory Query Caching | Node-Cache TTL & invalidation | **PASS** | Automated latency benchmark proves ~50x speedup; invalidation on mutations. |
 | **Practical 10**| Asynchronous EventEmitter | Node:events non-blocking bus | **PASS** | Immediate HTTP response while background worker processes task-created event. |
 | **Practical 11**| Docker Containerization | Multi-stage Dockerfiles & Compose | **BLOCKED** | Dockerfiles, Nginx proxy, Compose ready; Docker Engine not active on host. |
+| **Practical 12**| CI/CD with GitHub Actions | Workflow config, test runners | **PASS** | Automated testing on push/PR, simulated broken test demo & fixed pass demo. |
+| **Practical 13**| AI API Integration | LLM API & Heuristic Fallback Engine | **PASS** | Auto-description, priority suggestion, checklist generation, zero-breakage. |
 
 ---
 
@@ -184,6 +186,85 @@ INTEGRATION TESTS SUMMARY: 24 PASSED | 0 FAILED
    docker compose ps
    ```
 5. Open `http://localhost` in the browser to interact with the containerized application.
+
+---
+
+## 6. Practical 12: CI/CD Pipeline with GitHub Actions Verification
+
+### A. Broken Test Failure Demonstration (Simulating Pipeline Failure):
+Executing `node tests/ci-test-demo.js --fail` demonstrates build failure on invalid/broken code:
+
+```
+========================================================
+CI/CD PIPELINE AUTOMATED TEST RUNNER (PRACTICAL 12)
+========================================================
+
+Executing test suite for Task Management application...
+  [TEST 1] Task schema requires non-empty title...
+  ❌ [FAIL] Assertion failed: Task title cannot be empty.
+
+>>> CI PIPELINE ABORTED: Broken test detected (simulated failure).
+>>> Pipeline status: RED (FAILED)
+Exit Code: 1
+```
+
+### B. Fixed Test Passing Demonstration (Simulating Successful Pipeline):
+Executing `node tests/ci-test-demo.js` demonstrates full validation and pipeline success:
+
+```
+========================================================
+CI/CD PIPELINE AUTOMATED TEST RUNNER (PRACTICAL 12)
+========================================================
+
+Executing test suite for Task Management application...
+  [TEST 1] Task schema requires non-empty title...
+  ✅ [PASS] Task title validation passed.
+  [TEST 2] Priority must be low, medium, or high...
+  ✅ [PASS] Priority "high" is supported.
+  [TEST 3] Status transitions (pending -> in-progress -> completed)...
+  ✅ [PASS] State machine rules verified.
+
+========================================================
+  ALL TESTS PASSED (3/3)
+  CI PIPELINE STATUS: GREEN (SUCCESSFUL)
+========================================================
+Exit Code: 0
+```
+
+---
+
+## 7. Practical 13: AI API Integration & Responsible AI Verification
+
+Execution of `npm run test:ai` verifies prompt analysis, priority estimation, checklist generation, and responsible fallback degradation:
+
+```
+========================================================
+TESTING PRACTICAL 13: AI API INTEGRATION & RESPONSIBLE AI
+========================================================
+
+--- TEST 1: DevOps Task AI Suggestion ---
+  ✅ [PASS] Generates comprehensive task description
+  ✅ [PASS] Correctly infers "high" priority for critical infrastructure
+  ✅ [PASS] Generates actionable subtask checklist
+   Source: Heuristic AI Fallback (Zero-Breakage Engine)
+   Inferred Category: DevOps & Infrastructure | Est: 3 to 4 hours
+
+--- TEST 2: Authentication & Security AI Analysis ---
+  ✅ [PASS] Assigns valid priority enum
+  ✅ [PASS] Categorized under Security/Backend
+   Suggestion preview: "Implement secure authentication pipeline utilizing salted bcrypt password h..."
+
+--- TEST 3: Error Handling & Graceful Degradation ---
+  ✅ [PASS] Rejects empty task title without application crash
+
+--- TEST 4: Responsible AI Notice & Safety ---
+  ✅ [PASS] Includes responsible AI disclosure statement
+
+========================================================
+PRACTICAL 13 TEST SUMMARY: 7 PASSED | 0 FAILED
+STATUS: [PASS]
+========================================================
+```
 
 ---
 *Report Verified by: Dhruv Patel (CHARUSAT ITUE301)*

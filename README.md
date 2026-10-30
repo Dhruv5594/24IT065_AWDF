@@ -69,6 +69,8 @@ This repository represents the comprehensive, production-grade implementation of
 | **Practical 9** | In-Memory Caching & Latency Optimization | `backend/utils/cache.js` (`node-cache`, TTL, invalidation on mutations) |
 | **Practical 10**| Asynchronous Decoupling via native EventEmitter | `backend/utils/eventEmitter.js` (`node:events`, non-blocking HTTP return) |
 | **Practical 11**| Containerization with Docker & Docker Compose | `backend/Dockerfile`, `frontend/Dockerfile`, `frontend/nginx.conf`, `compose.yaml` |
+| **Practical 12**| CI/CD Pipeline with GitHub Actions | `.github/workflows/ci.yml`, `backend/tests/ci-test-demo.js` |
+| **Practical 13**| AI API Integration into a Web Application | `backend/services/aiService.js`, `frontend/src/pages/TasksPage.jsx`, `ai-integration.test.js` |
 
 ---
 
@@ -260,6 +262,14 @@ npm run test:cache
 
 # 3. Practical 10 Asynchronous EventEmitter Pipeline Verification
 npm run test:events
+
+# 4. Practical 12 CI/CD Pipeline Test (Pass / Fail Demonstration)
+npm run test:ci
+node tests/ci-test-demo.js --fail   # Demonstrates broken pipeline (RED)
+node tests/ci-test-demo.js          # Demonstrates fixed pipeline (GREEN)
+
+# 5. Practical 13 AI Integration & Responsible Fallback Test
+npm run test:ai
 ```
 
 ---
